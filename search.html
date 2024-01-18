@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repositories</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        nav {
+            width: 100vw;
+            height: 15vh;
+            margin-bottom: 40px;
+            margin-top: 0px;
+            background-color: #40A2D8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin-left: 5%;
+            font-size: 35px;
+        }
+
+        ul {
+            margin-right: 5%;
+            display: flex;
+            justify-content: space-evenly;
+            list-style: none;
+        }
+
+        li {
+            margin: 20px;
+            font-size: 20px;
+            color: black;
+            text-decoration: none;
+        }
+
+        a {
+            color: black;
+            text-decoration: none;
+        }
+
+        input {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: #40A2D8;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #loadingMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        input {
+            width: 40vw;
+            height: 5vh;
+            margin-left: 25%;
+        }
+
+        #btn {
+            margin-left: 0px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background-color: #40A2D8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        #profileSection {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            display: flex;
+            width: 100vw;
+            min-height: fit-content;
+        }
+
+        #pic {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+        }
+
+        #detail {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h1>GitHub</h1>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li>Search</li>
+            <a href="https://docs.google.com/document/d/e/2PACX-1vQNs82IYoZik5PyhZrwfkGa--oNlWLB31vxOMg5xarPUoGY_8oJlJECnUI8k3Idmg/pub">
+                <li>My Resume</li>
+            </a>
+        </ul>
+    </nav>
+
+    <div>
+        <input type="text" id="usernameInput" placeholder="Enter GitHub username">
+        <button id="btn" type="submit" onclick="searchRepositories()">Search</button>
+    </div>
+
+    <div id="profileSection">
+        <div id="pic"></div>
+        <div id="detail">
+            <h1 id="name"></h1>
+            <a id="orgainsation_url"></a>
+        </div>
+    </div>
+
+    <div id="maincon"></div>
+    <div id="loadingMessage">Loading...</div>
+    <div class="pagination" id="pagination"></div>
+
+    <script src="config.js"></script>
+
+    <script>
+        const maincon = document.getElementById('maincon');
+        maincon.style.display = 'flex';
+        maincon.style.flexWrap = 'wrap';
+        maincon.style.justifyContent = 'space-between';
+        maincon.style.height = 'min';
+
+        const loadingMessage = document.getElementById('loadingMessage');
+        const pic = document.getElementById('pic');
+        const profile = document.getElementById("profileSection");
+
+        const paginationContainer = document.getElementById('pagination');
+        let page = 1;
+        const itemsPerPage = 6;
+
+        async function searchRepositories() {
+            page = 1;
+            maincon.innerHTML = '';
+            await loadRepositories();
+        }
+
+        async function getTotalRepositories(username) {
+            const url = `https://api.github.com/users/${username}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                pic.innerHTML = `<img src="${data.avatar_url}" alt="Profile Picture" style="width: 200px; height: 200px; border-radius: 50%;">`;
+                const name = document.getElementById('name');
+                name.innerText = `${username}`;
+
+                const orgainsation_url = document.getElementById('orgainsation_url');
+                orgainsation_url.innerHTML = `${data.organizations_url}`;
+
+                return data.public_repos;
+            } catch (error) {
+                console.error('Error:', error);
+                return 0;
+            }
+        }
+
+        async function loadRepositories() {
+            const username = document.getElementById('usernameInput').value;
+            const totalRepos = await getTotalRepositories(username);
+            const totalPages = Math.ceil(totalRepos / itemsPerPage);
+
+            loadingMessage.style.display = 'block';
+
+            try {
+                const url = `https://api.github.com/users/${username}/repos?page=${page}&per_page=${itemsPerPage}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
+                data.forEach(repository => {
+                    const repositoryContainer = document.createElement('div');
+                    repositoryContainer.style.width = '27vw';
+                    repositoryContainer.style.height = 'min';
+                    repositoryContainer.style.border = '2px solid black';
+                    repositoryContainer.style.margin = '30px';
+
+                    const nameElement = document.createElement('h1');
+                    nameElement.innerHTML = `Repository Name: ${repository.name}`;
+                    repositoryContainer.appendChild(nameElement);
+
+                    fetch(repository.languages_url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Accept': 'application/json',
+                        },
+                    })
+                        .then(response => response.json())
+                        .then(languages => {
+                            Object.keys(languages).forEach(language => {
+                                const languageButton = document.createElement('button');
+                                languageButton.innerHTML = language;
+                                languageButton.style.marginRight = '5px';
+                                languageButton.style.color = 'white';
+                                languageButton.style.backgroundColor = '#40A2D8';
+                                languageButton.style.marginLeft = '30px';
+                                languageButton.style.marginBottom = '10px';
+                                languageButton.style.border = 'none';
+                                languageButton.style.padding = '3px';
+                                repositoryContainer.appendChild(languageButton);
+                            });
+                        })
+                        .catch(error => console.error('Error fetching languages:', error));
+
+                    maincon.appendChild(repositoryContainer);
+                });
+
+                updatePagination(totalPages);
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        function updatePagination(totalPages) {
+            paginationContainer.innerHTML = '';
+
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = 'Previous';
+            prevButton.style.marginRight='10px';
+            prevButton.addEventListener('click', () => {
+                if (page > 1) {
+                    page--;
+                    maincon.innerHTML = '';
+                    loadRepositories();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.innerHTML = i;
+                pageButton.addEventListener('click', (event) => {
+                    page = parseInt(event.target.innerHTML);
+                    maincon.innerHTML = '';
+                    loadRepositories();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = 'Next';
+            nextButton.style.marginLeft='10px';
+            nextButton.addEventListener('click', () => {
+                if (page < totalPages) {
+                    page++;
+                    maincon.innerHTML = '';
+                    loadRepositories();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    </script>
+</body>
+
+</html>

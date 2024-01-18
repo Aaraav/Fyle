@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Repositories</title>
+  <nav>
+    <h1>GitHub</h1>
+    <ul>
+       <li>Home</li>
+    <li><a href="search.html">Search</a></li>
+    <li><a href="https://docs.google.com/document/d/e/2PACX-1vQNs82IYoZik5PyhZrwfkGa--oNlWLB31vxOMg5xarPUoGY_8oJlJECnUI8k3Idmg/pub"> Resume</a></ul></li>
+  </ul>
+
+   </nav>
+</head>
+
+    
+<style>
+    body{
+        margin: 0;
+        padding: 0;
+overflow-x: hidden;
+    }
+    nav{
+        width: 100vw;
+        height: 15vh;
+        margin-bottom: 40px;
+
+        margin-top: 0px;
+        background-color: #40A2D8;
+        display: flex;justify-content: space-between;
+        align-items: center;
+        >h1{
+            margin-left: 5%;
+            font-size: 35px;
+        }
+        >ul{
+            margin-right: 5%;
+            display: flex;
+            justify-content: space-evenly;
+            list-style: none;
+            >li{
+                margin: 20px;
+                font-size: 20px;
+                color: black;
+                text-decoration: none;
+                >a {
+      color: black; 
+      text-decoration: none;
+    }
+            }
+        }
+    }
+
+</style>
+
+<body>
+  <script src="config.js"></script>
+
+  <script>
+    const url = 'https://api.github.com/repositories';
+    const maincon = document.createElement('div');
+    maincon.style.display = 'flex';
+    maincon.style.width = '100vw';
+maincon.style.flexWrap='wrap';
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      },
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        data.forEach(repository => {
+          const repositoryContainer = document.createElement('div');
+          repositoryContainer.style.width = '30vw';
+          repositoryContainer.style.height = 'min';
+
+
+          repositoryContainer.style.border = '2px solid black';
+          repositoryContainer.style.margin = '10px';
+
+
+          const nameElement = document.createElement('h1');
+          nameElement.innerHTML = `Repository Name: ${repository.name}, Owner: ${repository.owner.login}`;
+          repositoryContainer.appendChild(nameElement);
+
+          fetch(repository.languages_url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/json',
+            },
+          })
+            .then(response => response.json())
+            .then(languages => {
+              // Create a button for each language
+              Object.keys(languages).forEach(language => {
+                const languageButton = document.createElement('button');
+                languageButton.innerHTML = language;
+                languageButton.style.marginRight = '5px';
+                languageButton.style.color = 'white';
+                languageButton.style.backgroundColor = '#40A2D8';
+                languageButton.style.marginLeft = '30px';
+                languageButton.style.marginBottom = '10px';
+                languageButton.style.border = 'none';
+                languageButton.style.padding = '3px';
+
+
+
+
+                repositoryContainer.appendChild(languageButton);
+              });
+            })
+            .catch(error => console.error('Error fetching languages:', error));
+
+          maincon.appendChild(repositoryContainer);
+          document.body.append(maincon);
+        });
+      })
+      .catch(error => console.error('Error:', error));
+  </script>
+</body>
+</html>
